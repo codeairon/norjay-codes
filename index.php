@@ -14,6 +14,32 @@ if (isset($_SESSION["user_id"])) {
     $user = $result->fetch_assoc();
 }
 
+// Fetch total number of courses
+$totalCoursesQuery = "SELECT COUNT(*) as total FROM courses";
+$totalCoursesResult = $mysqli->query($totalCoursesQuery);
+$totalCoursesData = $totalCoursesResult->fetch_assoc();
+$totalCourses = $totalCoursesData['total'];
+
+// Fetch total number of subjects
+$totalSubjectsQuery = "SELECT COUNT(*) as total FROM subjects";
+$totalSubjectsResult = $mysqli->query($totalSubjectsQuery);
+$totalSubjectsData = $totalSubjectsResult->fetch_assoc();
+$totalSubjects = $totalSubjectsData['total'];
+
+// Handle adding a new course
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_course"])) {
+    $course_id = $_POST["course_id"];
+    $course_name = $_POST["course_name"];
+    $insert_sql = "INSERT INTO courses (id, name, description) VALUES ('$course_id', '$course_name', '')";
+    $mysqli->query($insert_sql);
+
+    // Fetch total number of courses after adding new course
+    $totalCoursesQuery = "SELECT COUNT(*) as total FROM courses";
+    $totalCoursesResult = $mysqli->query($totalCoursesQuery);
+    $totalCoursesData = $totalCoursesResult->fetch_assoc();
+    $totalCourses = $totalCoursesData['total'];
+}
+
 // Handle deleting a course
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_course"])) {
     $course_id = $_POST["course_id"];
@@ -78,58 +104,32 @@ while ($row = $students_result->fetch_assoc()) {
     $students[] = $row;
 }
 
-// Fetch total number of courses
-$totalCoursesQuery = "SELECT COUNT(*) as total FROM courses";
-$totalCoursesResult = $mysqli->query($totalCoursesQuery);
-$totalCoursesData = $totalCoursesResult->fetch_assoc();
-$totalCourses = $totalCoursesData['total'];
-
-// Fetch total number of subjects
-$totalSubjectsQuery = "SELECT COUNT(*) as total FROM subjects";
-$totalSubjectsResult = $mysqli->query($totalSubjectsQuery);
-$totalSubjectsData = $totalSubjectsResult->fetch_assoc();
-$totalSubjects = $totalSubjectsData['total'];
-
-// Handle adding a new course
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_course"])) {
-    $course_id = $_POST["course_id"];
-    $course_name = $_POST["course_name"];
-    $insert_sql = "INSERT INTO courses (id, name, description) VALUES ('$course_id', '$course_name', '')";
-    $mysqli->query($insert_sql);
-
-    // Fetch total number of courses after adding new course
-    $totalCoursesQuery = "SELECT COUNT(*) as total FROM courses";
-    $totalCoursesResult = $mysqli->query($totalCoursesQuery);
-    $totalCoursesData = $totalCoursesResult->fetch_assoc();
-    $totalCourses = $totalCoursesData['total'];
-}
-
 // Function to display a message for adding a new student as an alert
 function displayAddStudentMessage($message, $type = 'success') {
     echo "<div class='alert alert-$type' role='alert'>$message</div>";
+    echo "<a href='index.php' class='btn btn-primary'>Add Another Student</a>";
 }
+
 // Handle adding a new student
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_student"])) {
     // Retrieve form data
     $student_name = $_POST["student_name"];
-    $student_id = $_POST["student_id"];
-    $student_dob = $_POST["student_dob"];
     $student_email = $_POST["student_email"];
-
     // Insert student data into the students table
-    $insert_student_sql = "INSERT INTO students (name, student_id, date_of_birth, email) 
-                           VALUES ('$student_name', '$student_id', '$student_dob', '$student_email')";
+    $insert_student_sql = "INSERT INTO students (name, email) 
+                           VALUES ('$student_name', '$student_email')";
 
     // Execute the SQL query
     if ($mysqli->query($insert_student_sql) === TRUE) {
-         // Student added successfully
-         $addStudentMessage = "Student added successfully: $student_name";
+        // Student added successfully
+        $addStudentMessage = "Student added successfully: $student_name";
         displayAddStudentMessage($addStudentMessage, 'success');
-        } else {
-            // Error occurred while adding student
-            $addStudentMessage = "Error adding student: " . $mysqli->error;
+    } else {
+        // Error occurred while adding student
+        $addStudentMessage = "Error adding student: " . $mysqli->error;
         displayAddStudentMessage($addStudentMessage, 'danger');
-        }
+    }
+
     // Send JSON response
     echo json_encode($addStudentMessage);
     exit; // Stop further execution
@@ -191,69 +191,77 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
     <style>
-       body {
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #f0f0f0, #59d98e); 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 20px;
-    background-image: url('picture/kuku.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-        opacity: 0.8;
-}
+    .container {
+      width: 400px;
+      background-color: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      text-align: center;
+    }
 
-        h1 {
-            margin-top: 300px;
-            margin-left: 10px;
-            margin-right:600px;
-            margin-bottom: 300px;
-            color: rgb(4, 201, 255); 
-        }
+    h1 {
+      color: #333333;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
 
-        p {
-            margin-bottom: 200px;
-            margin-left: 300px;
-            color: white;
-            font-size: 26px;   
-        } 
-        
+    p {
+      font-size: 16px;
+      margin-bottom: 20px;
+      
+    }
+
+    a {
+      color: #4CAF50;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    a:hover {
+      color: #45a049;
+    }
 
         /* Style for tab menu */
-        .tab-menu {
-            display: flex;
-            list-style-type: none;
-            padding: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 30px;
-            
-            z-index: 1000; /* Ensures it's above other content */
-        }
+    .tab-menu {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex; /* Display tabs horizontally */
+    }
 
-        .tab-menu li {
-           background-color: white;
-            margin-left: 10px;
-            position: relative; /* Ensure submenu positioning is relative to this */
-        }
+    .tab-menu li {
+      margin-right: 20px;
+      position: relative;
+    }
 
-        .tab-menu li a {
-            text-decoration: none;
-            color: white;
-            font-weight: bold;
-            padding: 10px;
-            background-color: rgb(4, 201, 255);
-            position: relative;
-        }
+    .tab-menu li a {
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #59d98e; /* Green color */
+      position: relative;
+    }
 
-        .tab-menu li a:hover {
-            background-color: wheat;            
-        }
-
+    .tab-menu li a:hover {
+      background-color: #4CAF50; /* Darker green color on hover */
+    }
         /* Style for submenu */
         .submenu {
             display: none;
@@ -276,7 +284,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         }
 
         .submenu li a:hover {
-            background-color: wheat;
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
         /* Style for modal */
@@ -304,7 +312,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         }
 
         .close {
-            color: #aaa;    
+            color: #aaa;
             float: right;
             font-size: 28px;
             font-weight: bold;
@@ -337,32 +345,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         .image-description {
             margin-top: 5px;
             position: relative;
-            font-size: 24sp;
+            font-size: 1;
             color: black;
         }
-        
+
+            /* Logout link */
+    .logout-link {
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .logout-link:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
         /* Panel for About */
         #aboutModal .modal-content {
-            background-color: rgba(255, 255, 255, 0.30); /* White with 10% opacity */
+            background-color: transparent; /* White with 10% opacity */
             width: 100%;
             max-width: 1500px; /* Adjust the max-width as needed */
         }
 
         /* Panel for Course */
         #coursePanel .modal-content {
-            background-color: rgba(255, 255, 255, 0.9); /* White with 10% opacity */
+            background-color: rgba(0, 0, 0, 0.5); /* White with 10% opacity */
             width:fit-content;
         }
 
         /* Panel for Subject */
         #subjectPanel .modal-content {
-            background-color: rgba(255, 255, 255, 0.9); /* White with 10% opacity */
+            background-color: transparent; /* White with 10% opacity */
             width:fit-content;
         }
 
         /* Panel for Students */
         #studentsPanel .modal-content {
-            background-color: rgba(255, 255, 255, 0.9); /* White with 10% opacity */
+            background-color: transparent; /* White with 10% opacity */
             width:fit-content;
         }
 
@@ -372,41 +393,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
                 flex-direction: column;
             }
         }
-    </style>
+        </style>
 </head>
 <body>
-    
+
+<div class="container">
+    <h1>Welcome User!</h1>
     <!-- Tab menu -->
     <?php if (isset($user)): ?>
-        <ul class="tab-menu">
-            <li><a href="#" id="setup-menu">SETUP</a>
-                <ul class="submenu">
-                    <li><a href="#" id="course-submenu">Course</a></li>
-                    <li><a href="#" id="subject-submenu">Subject</a></li>
-                    <li><a href="#" id="students-submenu">Students</a></li>
-                </ul>
-            </li>
-            <li><a href="#" id="transaction-menu">Transaction</a>
-                <ul class="submenu">
-                    <li><a href="#" id="enrollment-submenu">Enrollment</a></li>
-                </ul>
-            </li>
-            <li><a href="#" id="reports-menu">Reports</a>
-                <ul class="submenu">
-                    <li><a href="#" id="assessment-submenu">Assessment</a></li>
-                </ul>
-            </li>
-            <li><a href="#" id="about-menu">ABOUT</a></li>
-        </ul>
+          <!-- Tab menu -->
+      <ul class="tab-menu">
+        <li><a href="#" id="setup-menu">SETUP</a>
+          <ul class="submenu">
+            <li><a href="#" id="course-submenu">Course</a></li>
+            <li><a href="#" id="subject-submenu">Subject</a></li>
+            <li><a href="#" id="students-submenu">Students</a></li>
+          </ul>
+        </li>
+        <li><a href="#" id="transaction-menu">Transaction</a>
+          <ul class="submenu">
+            <li><a href="#" id="enrollment-submenu">Enrollment</a></li>
+          </ul>
+        </li>
+        <li><a href="#" id="reports-menu">Reports</a>
+          <ul class="submenu">
+            <li><a href="#" id="assessment-submenu">Assessment</a></li>
+          </ul>
+        </li>
+        <li><a href="#" id="about-menu">ABOUT</a></li>
+        <li><a href="logout.php" class="logout-link">Logout</a></li>
+      </ul>
+      <!-- End of Tab menu -->
     <?php endif; ?>
 
     <h1>Home</h1>
 
     <?php if (isset($user)): ?>
-        <p>Hello <?= htmlspecialchars($user["name"]) ?></p>
-        <p><a href="logout.php">Log out</a></p>
+        <p>Hello <?= htmlspecialchars($user["username"]) ?></p>
+        
     <?php else: ?>
-        <p><a href="login.php">Log in</a> or <a href="signup.html">sign up</a></p>
+        <p><a href="login.php">Log in</a> or <a href="signup.php">sign up</a></p>
     <?php endif; ?>
 
     <!-- Modal for About -->
@@ -419,35 +445,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         <div class="about-section">
             <!-- Image 1 with description -->
             <div class="about-image">
-                <img src="picture/kert.png" alt="Image 1">
+                <img src="image/lovely.png" alt="Image 1">
                 <div class="image-description">
-                    <label>Kert Davis Binalay</label>
-                    <label>Tumauini Isabela</label>
-                    <label>BSIT 2B</label>
+                    <p>Lovely Joyce Languian</p>
+                    <p>Tumauini Isabela</p>
+                    <p>BSIT 2B</p>
                 </div>
             </div>
             <!-- Image 2 with description -->
             <div class="about-image">
-                <img src="picture/norjay.png" alt="Image 2">
+                <img src="image/kristine.png" alt="Image 2">
                 <div class="image-description">
-                    <label>Norjay Dionesio</label>
-                    <plabel>Sta Maria Isabela</label>
-                    <label>BSIT 2B</label>
+                    <p>Kristne Mae Baquiran</p>
+                    <p>Cabagan Isabela</p>
+                    <p>BSIT 2B</p>
                 </div>
             </div>
             <!-- Image 3 with description -->
             <div class="about-image">
-                <img src="picture/clyde.png" alt="Image 3">
+                <img src="image/joyce.png" alt="Image 3">
                 <div class="image-description">
-                    <label>Clyde Melendez</label>
-                    <label>Cabagan Isabela</label>
-                    <label>BSIT 2B</label>
+                    <p>Joyce Baquiran</p>
+                    <p>Cabagan Isabela</p>
+                    <p>BSIT 2B</p>
                 </div>
             </div>
         </div>
         <!-- Logout link -->
-        <p style="position: absolute; bottom: 20px; left: 20px; color: black;">
-        <p>Simple-Login-Signup Page with Enrollment Sytem</p>
+        <p style="position: absolute; bottom: 20px; left: 20px;">
+            <a href="logout.php" style="color: red;">Log out</a>
         </p>
     </div>
 </div>
@@ -519,9 +545,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         <?php if (isset($user)): ?>
             <div>
                 <h4>User Information<h4>
-                <label><b>Name:</b></label> <?= htmlspecialchars($user["name"]) ?><br>
-                <label><b>Student ID:</b></label> <?= htmlspecialchars($user["student_id"]) ?><br>
-                <label><b>Date of Birth:</b></label> <?= htmlspecialchars($user["date_of_birth"]) ?><br>
+                <label><b>Name:</b></label> <?= htmlspecialchars($user["username"]) ?><br>
                 <label><b>Email:</b></label> <?= htmlspecialchars($user["email"]) ?><br>
             </div>
         <?php endif; ?>
@@ -531,8 +555,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         <button id="add-student-btn">Add Student</button>
         <form id="add-student-form" style="display: none;" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
             <input type="text" name="student_name" placeholder="Student Name" required><br>
-            <input type="text" name="student_id" placeholder="Student ID" required><br>
-            <input type="date" name="student_dob" placeholder="Date of Birth" required><br>
             <input type="email" name="student_email" placeholder="Email" required><br>
             <button type="submit" name="add_student">Save</button>
         </form>
@@ -561,18 +583,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
                 </thead>
                 <tbody>
                      <!-- Sample row, add more rows dynamically -->
-                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
-                        <td>IT GE ELEC 4</td>
-                        <td>The Entrepreneurial Mind</td>
-                        <td>2</td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
-                        <td>GEC 9</td>
-                        <td>The Life and Works of Rizal</td>
-                        <td>3</td>
-                    </tr>
                     <tr>
                         <td><input type="checkbox" name="enroll_1"></td>
                         <td>IT 221</td>
@@ -580,37 +590,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
                         <td>3</td>
                     </tr>
                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
+                        <td><input type="checkbox" name="enroll_2"></td>
                         <td>IT 222</td>
                         <td>Networking 1</td>
                         <td>3</td>
                     </tr>
                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
+                        <td><input type="checkbox" name="enroll_3"></td>
+                        <td>IT GE ELEC 4</td>
+                        <td>The Entrepreneurial Mind</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" name="enroll_4"></td>
                         <td>IT 223</td>
                         <td>Quantitative Methods (including Modeling and Simulation)</td>
                         <td>3</td>
                     </tr>
                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
+                        <td><input type="checkbox" name="enroll_5"></td>
                         <td>IT 224</td>
                         <td>Integrative Programming and Technologies</td>
                         <td>3</td>
                     </tr>
                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
+                        <td><input type="checkbox" name="enroll_6"></td>
+                        <td>GEC 9</td>
+                        <td>The Life and Works of Rizal</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" name="enroll_7"></td>
                         <td>IT 225</td>
                         <td>Accounting for Information Technology</td>
                         <td>3</td>
                     </tr>
                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
+                        <td><input type="checkbox" name="enroll_8"></td>
                         <td>IT APPDEV 1</td>
                         <td>Fundamentals of Mobile Technology</td>
                         <td>3</td>
                     </tr>
                     <tr>
-                        <td><input type="checkbox" name="enroll_1"></td>
+                        <td><input type="checkbox" name="enroll_9"></td>
                         <td>PE 4</td>
                         <td>Physical Activity Towards Health and Fitness IV</td>
                         <td>2</td>
@@ -635,9 +657,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
         <!-- Message for successful enrollment -->
         <p id="enrollment-message" style="color: green; display: none;">Enrollment successful!</p>
 
-        <!-- Label for enrolled subjects -->
-        <h3>Enrolled Subjects</h3>
-        <div id="enrolled-subjects"></div>
     </div>
 </div>
 
@@ -711,6 +730,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["subjects"])) {
             </table>
             <button id="print-assessment-btn">Print</button>
         </div>
+
     <!-- JavaScript to toggle submenu and modal -->
     <script>
         // Function to toggle submenu
@@ -766,6 +786,10 @@ document.getElementById('assessment-submenu').addEventListener('click', function
 document.getElementById('enroll-btn').addEventListener('click', function() {
     handleEnrollment();
 });
+// Event listener for print button in the Assessment panel
+document.getElementById('print-assessment-btn').addEventListener('click', function() {
+    printAssessment();
+});
 // Function to handle enrollment
 function handleEnrollment() {
     // Get the checked subjects
@@ -789,10 +813,11 @@ function handleEnrollment() {
     .then(data => {
         // Handle the server's response
         if (data.success) {
-            document.getElementById('enrollment-message').style.display = 'block';
+            // Display a success message
+            var enrollmentMessage = document.getElementById('enrollment-message');
+            enrollmentMessage.textContent = "You are now enrolled!";
+            enrollmentMessage.style.display = 'block';
             // Optionally, you can update the UI or display a success message
-            // Now, let's fetch and display the enrolled subjects in the Enrollment and Assessment panels
-            fetchEnrolledSubjects();
         } else {
             // Handle errors
             console.error('Error:', data.message);
@@ -803,57 +828,35 @@ function handleEnrollment() {
     });
 }
 
-// Function to fetch and display enrolled subjects
-function fetchEnrolledSubjects() {
-    fetch('fetch_enrolled_subjects.php')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Display enrolled subjects in the Enrollment panel
-            displayEnrolledSubjects(data.enrolledSubjects);
-            // Display enrolled subjects in the Assessment panel
-            displayEnrolledSubjectsInAssessment(data.enrolledSubjects);
-        } else {
-            // Handle errors
-            console.error('Error:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
+// Function to print the assessment content
+function printAssessment() {
+    // Create a new window for the printable content
+    var printWindow = window.open('', '_blank');
+    
+    // Construct the printable content
+    var printableContent = '<h2 style="color: black;">Assessment</h2><h4 style="color: black;">2nd Semester SY 2023 - 2024</h4>';
+    printableContent += '<table border="1">';
+    printableContent += '<thead><tr><th>Subject Code</th><th>Subject Description</th><th>Units</th></tr></thead>';
+    printableContent += '<tbody>';
+
+    // Loop through the assessment table and add content to the printable version
+    var assessmentRows = document.getElementById('assessment-body').querySelectorAll('tr');
+    assessmentRows.forEach(function(row) {
+        printableContent += '<tr>';
+        var columns = row.querySelectorAll('td');
+        columns.forEach(function(column) {
+            printableContent += '<td>' + column.textContent + '</td>';
+        });
+        printableContent += '</tr>';
     });
+
+    printableContent += '</tbody></table>';
+
+    // Write the content to the new window and print it
+    printWindow.document.write('<html><head><title>Assessment</title></head><body>' + printableContent + '</body></html>');
+    printWindow.document.close(); // Close writing to the document
+    printWindow.print(); // Print the document
 }
-
-// Function to display enrolled subjects in the Enrollment panel
-function displayEnrolledSubjects(enrolledSubjects) {
-    var enrolledSubjectsDiv = document.getElementById('enrolled-subjects');
-    enrolledSubjectsDiv.innerHTML = ''; // Clear previous content
-    enrolledSubjects.forEach(function(subject) {
-        var subjectDiv = document.createElement('div');
-        subjectDiv.innerHTML = `
-            <p><b>Subject Code:</b> ${subject.subject_code}</p>
-            <p><b>Subject Description:</b> ${subject.subject_description}</p>
-            <p><b>Units:</b> ${subject.units}</p>
-        `;
-        enrolledSubjectsDiv.appendChild(subjectDiv);
-    });
-}
-
-// Function to display enrolled subjects in the Assessment panel
-function displayEnrolledSubjectsInAssessment(enrolledSubjects) {
-    var assessmentEnrolledSubjectsDiv = document.getElementById('assessment-enrolled-subjects');
-    assessmentEnrolledSubjectsDiv.innerHTML = ''; // Clear previous content
-    enrolledSubjects.forEach(function(subject) {
-        var subjectDiv = document.createElement('div');
-        subjectDiv.innerHTML = `
-            <p><b>Subject Code:</b> ${subject.subject_code}</p>
-            <p><b>Subject Description:</b> ${subject.subject_description}</p>
-            <p><b>Units:</b> ${subject.units}</p>
-        `;
-        assessmentEnrolledSubjectsDiv.appendChild(subjectDiv);
-    });
-}
-
-
 
 // Close modals when close buttons are clicked
 var closeButtons = document.querySelectorAll('.close');
@@ -912,40 +915,7 @@ document.getElementById('add-student-btn').addEventListener('click', function() 
 document.getElementById('enroll-btn').addEventListener('click', function() {
     handleEnrollment();
 });
-// Function to handle enrollment
-function handleEnrollment() {
-    // Get the checked subjects
-    var checkedSubjects = document.querySelectorAll('input[name="enroll_subject[]"]:checked');
 
-    // Prepare an array to store the subject IDs
-    var subjectIDs = [];
-    checkedSubjects.forEach(function(subject) {
-        subjectIDs.push(subject.value);
-    });
-
-    // Send the enrolled subjects to the server
-    fetch('enroll_subject.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ subjects: subjectIDs })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Handle the server's response
-        if (data.success) {
-            document.getElementById('enrollment-message').style.display = 'block';
-            // Optionally, you can update the UI or display a success message
-        } else {
-            // Handle errors
-            console.error('Error:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-}
 </script>
 
 
